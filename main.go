@@ -1,18 +1,33 @@
 package main
 
 import (
-	"github.com/henvo/golang-gin-gorm-starter/models"
-	"github.com/henvo/golang-gin-gorm-starter/routes"
+	"log"
+	// "student-tracker/controllers"
+	"student-tracker/database"
+	"student-tracker/routes"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv" // Add this import for godotenv
 )
 
-// Entrypoint for app.
+
+
+
+
+
 func main() {
-	// Load the routes
-	r := routes.SetupRouter()
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-	// Initialize database
-	models.SetupDatabase()
+	database.ConnectDB()
+	database.SeedCourses()
+	r := gin.Default()
 
-	// Start the HTTP API
-	r.Run()
+	routes.AuthRoutes(r)
+	routes.CourseRoutes(r)
+
+	r.Run() // default on :8080
 }

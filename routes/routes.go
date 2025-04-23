@@ -2,21 +2,16 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/henvo/golang-gin-gorm-starter/controllers"
+	"student-tracker/controllers"
 )
 
-// SetupRouter sets up the router.
-func SetupRouter() *gin.Engine {
-	r := gin.Default()
+func AuthRoutes(r *gin.Engine) {
+	r.POST("/register", controllers.Register)
+	r.POST("/login", controllers.Login)
+}
 
-	users := r.Group("/users")
-	{
-		users.GET("/", controllers.GetUsers)
-		users.GET("/:id", controllers.GetUser)
-		users.POST("/", controllers.CreateUser)
-		users.PATCH("/:id", controllers.UpdateUser)
-		users.DELETE("/:id", controllers.DeleteUser)
-	}
-
-	return r
+func CourseRoutes(r *gin.Engine) {
+	r.GET("/courses", controllers.GetCourses)
+	r.POST("/enroll", controllers.EnrollCourse)
+	r.POST("/rate", controllers.RateCourse)
 }
