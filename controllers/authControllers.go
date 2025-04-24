@@ -42,7 +42,22 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Registration successful"})
+	// Generate JWT token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"student_id": input.ID,
+		"exp":        time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	// Return success message and token
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Registration successful",
+		"token":   tokenString,
+	})
 }
 
 func Login(c *gin.Context) {
