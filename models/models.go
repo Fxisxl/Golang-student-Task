@@ -21,6 +21,7 @@ type Enrollment struct {
 	gorm.Model
 	StudentID uint
 	CourseID  uint
-	Rating    *int `json:"rating"` // pointer to allow null
+	Course    Course `gorm:"foreignKey:CourseID"` //to fetch course details
+	Rating    *int   `json:"rating"`
 }
 

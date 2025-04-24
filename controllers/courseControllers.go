@@ -100,3 +100,27 @@ func RateCourse(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Rated successfully", "new_rating": course.Rating})
 }
+
+
+func GetMyCourses(c *gin.Context) {
+	studentIDVal, exists := c.Get("student_id") // Correct key is "student_id"
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	studentID := studentIDVal.(uint)
+
+	var enrollments []models.Enrollment
+	err := database.DB.Preload("Course").Where("student_id = ?", studentID).Find(&enrollments).Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch enrollments"})
+		return
+	}
+
+	var courses []models.Course
+	for _, enrollment := range enrollments {
+		courses = append(courses, enrollment.Course)
+	}
+
+	c.JSON(http.StatusOK, courses)
+}

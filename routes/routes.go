@@ -18,27 +18,12 @@ func CourseRoutes(r *gin.Engine) {
 	courses := r.Group("/courses")
 	courses.Use(middleware.AuthMiddleware()) //  Apply JWT middleware
 
+
 	
 	courses.POST("/enroll", controllers.EnrollCourse)
 	courses.POST("/rate", controllers.RateCourse)
+	courses.GET("/my", controllers.GetMyCourses)
 }
 
 
 
-// func SetupRouter() *gin.Engine {
-// 	r := gin.Default()
-
-// 	r.POST("/register", controllers.Register)
-// 	r.POST("/login", controllers.Login)
-// 	r.GET("/courses", controllers.GetCourses)
-
-// 	//  Protected routes
-// 	auth := r.Group("/")
-// 	auth.Use(middleware.AuthMiddleware())
-// 	{
-// 		auth.POST("/enroll", controllers.EnrollCourse)
-// 		auth.POST("/rate", controllers.RateCourse)
-// 	}
-
-// 	return r
-// }
