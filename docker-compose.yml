@@ -2,18 +2,8 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .  # Path to your Dockerfile (current directory)
-      dockerfile: Dockerfile  # Name of your Dockerfile
+    build: .
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - JWT_SECRET=${JWT_SECRET}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgres://avnadmin:AVNS_jOM3C-8F6-XCYUm__wi@pg-ee910fc-supersaiyan0754-4da4.i.aivencloud.com:18202/studentDB?sslmode=require
     ports:
       - "8080:8080"  # Expose port 8080 from the container to the host machine
-    env_file:
-      - .env  # Load environment variables from .env file
