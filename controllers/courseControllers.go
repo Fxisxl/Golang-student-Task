@@ -26,8 +26,13 @@ func EnrollCourse(c *gin.Context) {
 		return
 	}
 
-	// Get student from token (for simplicity, assuming token was sent in header)
-	studentID := uint(1) // Hardcoded student for now; replace with JWT verification later
+	//  Get student_id from JWT
+	studentIDVal, exists := c.Get("student_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	studentID := studentIDVal.(uint)
 
 	var course models.Course
 	if err := database.DB.First(&course, input.CourseID).Error; err != nil {
@@ -35,15 +40,22 @@ func EnrollCourse(c *gin.Context) {
 		return
 	}
 
-	// Enroll student in course
-	enrollment := models.Enrollment{StudentID: studentID, CourseID: input.CourseID}
-	if err := database.DB.Create(&enrollment).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enroll in course"})
+	// Prevent duplicate enrollment
+	var existing models.Enrollment
+	if err := database.DB.Where("student_id = ? AND course_id = ?", studentID, input.CourseID).First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Already enrolled in this course"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Enrolled in course successfully"})
+	enrollment := models.Enrollment{StudentID: studentID, CourseID: input.CourseID}
+	if err := database.DB.Create(&enrollment).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enroll"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Enrolled successfully"})
 }
+
 
 func RateCourse(c *gin.Context) {
 	var input struct {
@@ -55,42 +67,36 @@ func RateCourse(c *gin.Context) {
 		return
 	}
 
-	// Get student from token (for simplicity, hardcoded)
-	studentID := uint(1)
+	//  Get student_id from JWT
+	studentIDVal, exists := c.Get("student_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	studentID := studentIDVal.(uint)
 
-	// Find enrollment
 	var enrollment models.Enrollment
 	if err := database.DB.Where("student_id = ? AND course_id = ?", studentID, input.CourseID).First(&enrollment).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Enrollment not found"})
 		return
 	}
 
-	// Update rating
 	enrollment.Rating = &input.Rating
 	if err := database.DB.Save(&enrollment).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to rate course"})
 		return
 	}
 
-	// Recalculate course rating
-	var course models.Course
-	if err := database.DB.First(&course, input.CourseID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find course"})
-		return
-	}
-
-	// Initialize count as int64
 	var totalRating int
-	var count int64 // Change the type to int64
-	database.DB.Model(&models.Enrollment{}).Where("course_id = ?", input.CourseID).Select("rating").Scan(&totalRating)
-	database.DB.Model(&models.Enrollment{}).Where("course_id = ?", input.CourseID).Count(&count)
+	var count int64
+	database.DB.Model(&models.Enrollment{}).Where("course_id = ? AND rating IS NOT NULL", input.CourseID).Select("SUM(rating)").Scan(&totalRating)
+	database.DB.Model(&models.Enrollment{}).Where("course_id = ? AND rating IS NOT NULL", input.CourseID).Count(&count)
 
-	// Calculate average rating if there are enrollments
-	if count > 0 {
+	var course models.Course
+	if err := database.DB.First(&course, input.CourseID).Error; err == nil && count > 0 {
 		course.Rating = float64(totalRating) / float64(count)
+		database.DB.Save(&course)
 	}
 
-	database.DB.Save(&course)
-
-	c.JSON(http.StatusOK, gin.H{"message": "Course rated successfully", "new_rating": course.Rating})
+	c.JSON(http.StatusOK, gin.H{"message": "Rated successfully", "new_rating": course.Rating})
 }
